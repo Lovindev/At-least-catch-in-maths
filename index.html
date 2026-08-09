@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Catch Her v9 — Find the Intersection</title>
+<style>
+:root{
+  --bg:#070914;--panel:rgba(17,20,36,.78);--line:rgba(255,255,255,.09);
+  --text:#eef1ff;--muted:#9098b7;--accent:#8ea2ff;--pink:#ff7eaa;
+  --good:#76e6bd;--danger:#ff7e8b;--shadow:0 24px 80px rgba(0,0,0,.42)
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,#1a1f42 0,#0b0d1c 38%,#070914 75%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{overflow-x:hidden}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;padding:18px;display:flex;flex-direction:column;gap:14px;max-width:1500px;margin:auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border:1px solid var(--line);border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.045);box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.logo span{font-size:19px;color:#ff9bb9}
+h1{font-size:16px;margin:0;letter-spacing:.02em}
+.sub{font-size:11px;color:var(--muted);margin-top:2px}
+.progress{display:flex;align-items:center;gap:9px}
+.progressText{font-size:12px;color:var(--muted);white-space:nowrap}
+.dots{display:flex;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:#252a43;transition:.25s}
+.dot.done{background:var(--good)}.dot.active{background:var(--accent);box-shadow:0 0 14px #8ea2ff88}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;flex:1}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);backdrop-filter:blur(16px);overflow:hidden}
+.stage{position:relative;min-height:600px}
+canvas{width:100%;height:100%;display:block;min-height:600px}
+.hud{position:absolute;left:18px;right:18px;top:16px;display:flex;justify-content:space-between;pointer-events:none}
+.pill{background:rgba(7,9,20,.72);border:1px solid var(--line);padding:8px 11px;border-radius:12px;font-size:11px;color:var(--muted);backdrop-filter:blur(10px)}
+.pill b{color:var(--text);font-weight:600}
+.message{position:absolute;left:50%;bottom:18px;transform:translateX(-50%) translateY(15px);opacity:0;pointer-events:none;transition:.35s;max-width:min(90%,600px);text-align:center;background:rgba(7,9,20,.86);border:1px solid var(--line);padding:12px 17px;border-radius:15px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.message.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.panel{padding:20px;display:flex;flex-direction:column;gap:18px}
+.panel.info-hidden{gap:10px}
+.panel.info-hidden > div:first-child,
+.panel.info-hidden > .statRow,
+.panel.info-hidden > .fixedEq,
+.panel.info-hidden > .legend,
+.panel.info-hidden > .help{display:none}
+.panel.info-hidden .movementHint{display:none}
+.levelTitle{font-size:22px;margin:0 0 5px}.levelDesc{font-size:12px;color:var(--muted);line-height:1.6;margin:0}
+.positionInfo{margin-top:8px;padding:9px 10px;border:1px solid rgba(142,162,255,.12);border-radius:10px;background:rgba(142,162,255,.035);color:#9da6c8;font-size:10px;line-height:1.55}.positionInfo b{color:#e7eaff;font-weight:600}
+.statRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{padding:11px 12px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025)}
+.stat span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
+.stat strong{font-size:13px}.stat small{display:block;color:#747b99;font-size:9px;margin-top:4px}
+.fixedEq{padding:11px;border:1px solid rgba(255,126,170,.16);border-radius:13px;background:rgba(255,126,170,.035)}
+.fixedEqHead{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;color:#ff9cbb;margin-bottom:7px}
+.herEq{color:#ffc1d3;background:rgba(255,126,170,.045);border-color:rgba(255,126,170,.12)}
+.fixedHint{font-size:9px;color:#747b99;text-align:center;margin-top:6px}
+.control{padding-top:3px}
+.controlHead{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:8px}
+.controlHead span:last-child{color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.eq{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#080a14;border:1px solid var(--line);padding:13px;border-radius:12px;text-align:center;font-size:14px;color:#dce1ff}
+.equationInput{display:block;width:100%;box-sizing:border-box;background:transparent;outline:none;cursor:text;text-align:center;color:inherit;border:0;}
+.equationInput:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(142,162,255,.10);}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);padding:11px;border-radius:12px;font-size:12px;transition:.2s}
+.btn:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,#7f92ff,#a57dff);border:0;color:white;box-shadow:0 10px 30px #7184ff22}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.legend{display:flex;gap:15px;color:var(--muted);font-size:10px}
+.legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.help{font-size:11px;line-height:1.6;color:var(--muted);padding-top:2px}
+.overlay{position:fixed;inset:0;background:rgba(3,4,11,.76);backdrop-filter:blur(12px);display:grid;place-items:center;padding:20px;z-index:20;opacity:0;pointer-events:none;transition:.35s}
+.overlay.show{opacity:1;pointer-events:auto}
+.modal{width:min(560px,100%);padding:34px;border-radius:25px;background:linear-gradient(180deg,#151a31,#0c0f1e);border:1px solid rgba(255,255,255,.11);box-shadow:0 40px 120px rgba(0,0,0,.6);text-align:center}
+.modal .eyebrow{font-size:10px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
+.modal h2{font-size:34px;letter-spacing:-.03em;margin:12px 0}
+.modal p{color:var(--muted);font-size:13px;line-height:1.8;margin:0 auto 22px;max-width:450px}
+.finalEquation{font-family:ui-monospace,monospace;font-size:12px;color:#cbd3ff;padding:13px;border:1px solid var(--line);border-radius:12px;margin-bottom:20px}
+
+
+/* ───────── Credit Screen ───────── */
+.creditOverlay{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(3,4,11,.88);
+  backdrop-filter:blur(18px);
+  opacity:1;
+  pointer-events:auto;
+  transition:.5s ease;
+}
+.creditOverlay.hide{
+  opacity:0;
+  pointer-events:none;
+}
+.creditCard{
+  width:min(520px,100%);
+  padding:38px 28px;
+  border-radius:25px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(142,162,255,.12),transparent 48%),
+    linear-gradient(180deg,#151a31,#0c0f1e);
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:0 40px 120px rgba(0,0,0,.65);
+  transform:translateY(12px) scale(.98);
+  animation:creditIn .6s ease forwards;
+}
+.creditEyebrow{
+  font-size:10px;
+  letter-spacing:.18em;
+  color:var(--accent);
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+.creditCard h2{
+  margin:0;
+  font-size:27px;
+  letter-spacing:-.03em;
+}
+.creditCard p{
+  margin:13px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+.creditTouch{
+  margin-top:30px;
+  color:#747b99;
+  font-size:10px;
+  letter-spacing:.08em;
+  animation:creditPulse 1.8s ease-in-out infinite;
+}
+@keyframes creditIn{
+  to{transform:translateY(0) scale(1)}
+}
+@keyframes creditPulse{
+  0%,100%{opacity:.45}
+  50%{opacity:1}
+}
+
+/* ───────── Identity Screen ───────── */
+.identityOverlay{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(3,4,11,.82);
+  backdrop-filter:blur(16px);
+  opacity:0;
+  pointer-events:none;
+  transition:.45s ease;
+}
+.identityOverlay.show{
+  opacity:1;
+  pointer-events:auto;
+}
+.identityCard{
+  width:min(430px,100%);
+  padding:34px 30px 28px;
+  border-radius:25px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(142,162,255,.10),transparent 45%),
+    linear-gradient(180deg,#151a31,#0c0f1e);
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:0 40px 120px rgba(0,0,0,.6);
+  transform:translateY(18px) scale(.98);
+  transition:.45s ease;
+}
+.identityOverlay.show .identityCard{
+  transform:translateY(0) scale(1);
+}
+.identityLogo{
+  width:52px;
+  height:52px;
+  margin:0 auto 18px;
+  display:grid;
+  place-items:center;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.045);
+  color:#ff9bb9;
+  font-size:25px;
+  box-shadow:0 10px 35px rgba(0,0,0,.25);
+}
+.identityEyebrow{
+  font-size:10px;
+  letter-spacing:.18em;
+  color:var(--accent);
+}
+.identityCard h2{
+  margin:10px 0 8px;
+  font-size:31px;
+  letter-spacing:-.03em;
+}
+.identityCard > p{
+  margin:0 auto 25px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+.identityForm{
+  display:flex;
+  flex-direction:column;
+  gap:13px;
+  text-align:left;
+}
+.inputWrap label{
+  display:block;
+  margin:0 0 7px 3px;
+  color:#747b99;
+  font-size:9px;
+  letter-spacing:.12em;
+}
+.inputWrap input{
+  width:100%;
+  padding:13px 14px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  outline:none;
+  background:#080a14;
+  color:var(--text);
+  font-size:13px;
+  transition:.2s;
+}
+.inputWrap input::placeholder{
+  color:#50566f;
+}
+.inputWrap input:focus{
+  border-color:rgba(142,162,255,.55);
+  box-shadow:0 0 0 3px rgba(142,162,255,.08);
+}
+.genderChoices{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.choiceBtn,.noCrushBtn{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+  color:var(--muted);
+  padding:12px;
+  border-radius:12px;
+  font-size:12px;
+  transition:.2s;
+}
+.choiceBtn:hover,.noCrushBtn:hover{
+  background:rgba(255,255,255,.09);
+}
+.choiceBtn.selected{
+  color:white;
+  border-color:rgba(142,162,255,.55);
+  background:rgba(142,162,255,.12);
+  box-shadow:0 0 0 2px rgba(142,162,255,.05);
+}
+.noCrushBtn{
+  width:100%;
+  margin-top:7px;
+  padding:9px;
+  font-size:10px;
+}
+.noCrushBtn.selected{
+  color:#eef1ff;
+  border-color:rgba(255,126,170,.35);
+  background:rgba(255,126,170,.08);
+}
+.surnameWrap{
+  display:none;
+}
+.surnameWrap.show{
+  display:block;
+}
+.identityBtn{
+  width:100%;
+  margin-top:4px;
+  padding:13px;
+}
+.identityHint{
+  margin-top:20px;
+  color:#555c78;
+  font-size:9px;
+  letter-spacing:.03em;
+}
+/* Mobile typing performance mode */
+body.typing-mode .identityOverlay{
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  transition:none;
+}
+body.typing-mode .identityCard{
+  box-shadow:none;
+  transition:none;
+}
+body.typing-mode .inputWrap input{
+  transition:none;
+}
+
+@media(max-width:520px){
+  .identityCard{
+    padding:29px 21px 24px;
+    border-radius:21px;
+  }
+  .identityCard h2{
+    font-size:27px;
+  }
+}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}.stage,canvas{min-height:58vh;height:58vh}.panel{padding:17px}
+}
+@media(max-width:520px){
+  .app{padding:10px}.topbar{align-items:flex-start}.progressText{display:none}.stage,canvas{min-height:54vh;height:54vh;flex:none}.panel{border-radius:18px}.levelTitle{font-size:20px}
+}
+
+/* ───────── Level 5 Personal Message Screen ───────── */
+.level5Overlay{
+  position:fixed;
+  inset:0;
+  z-index:40;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(3,4,11,.86);
+  backdrop-filter:blur(18px);
+  opacity:0;
+  pointer-events:none;
+  transition:.4s ease;
+}
+.level5Overlay.show{
+  opacity:1;
+  pointer-events:auto;
+}
+.level5Card{
+  width:min(680px,100%);
+  min-height:320px;
+  padding:42px 34px 32px;
+  border-radius:28px;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(255,126,170,.13),transparent 48%),
+    linear-gradient(180deg,#181d38,#0b0e1d);
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:0 45px 140px rgba(0,0,0,.68);
+  transform:translateY(18px) scale(.97);
+  transition:.4s ease;
+}
+.level5Overlay.show .level5Card{
+  transform:translateY(0) scale(1);
+}
+.level5Eyebrow{
+  font-size:10px;
+  letter-spacing:.2em;
+  color:#ff9cbb;
+  text-transform:uppercase;
+  margin-bottom:18px;
+}
+.level5Icon{
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  border-radius:18px;
+  margin-bottom:22px;
+  color:#ff9bb9;
+  font-size:28px;
+  background:rgba(255,126,170,.07);
+  border:1px solid rgba(255,126,170,.18);
+  box-shadow:0 12px 40px rgba(255,126,170,.08);
+}
+.level5Message{
+  width:100%;
+  color:#f6f7ff;
+  font-size:clamp(28px,5vw,48px);
+  line-height:1.22;
+  font-weight:650;
+  letter-spacing:-.035em;
+  text-wrap:balance;
+  margin:4px auto 22px;
+}
+.level5Equation{
+  max-width:90%;
+  padding:11px 15px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;
+  color:#aeb7dc;
+  background:rgba(255,255,255,.025);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11px;
+  margin-bottom:24px;
+}
+.level5Btn{
+  min-width:180px;
+}
+@media(max-width:520px){
+  .level5Card{
+    min-height:280px;
+    padding:34px 22px 26px;
+    border-radius:23px;
+  }
+  .level5Message{
+    font-size:clamp(25px,8vw,36px);
+  }
+}
+
+
+.specialPasswordOverlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(3,4,11,.88);backdrop-filter:blur(18px);opacity:0;pointer-events:none;transition:.35s ease;}
+.specialPasswordOverlay.show{opacity:1;pointer-events:auto;}
+.specialPasswordCard{width:min(430px,100%);padding:32px 26px;border-radius:24px;text-align:center;background:linear-gradient(180deg,#181d38,#0b0e1d);border:1px solid rgba(255,255,255,.12);box-shadow:0 40px 120px rgba(0,0,0,.65);}
+.specialPasswordCard h2{margin:10px 0 10px;font-size:27px;}
+.specialPasswordCard p{color:var(--muted);font-size:12px;line-height:1.7;margin:0 0 20px;}
+.specialPasswordCard input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);outline:none;background:#080a14;color:var(--text);font-size:13px;text-align:center;}
+.specialPasswordCard input:focus{border-color:rgba(142,162,255,.55);box-shadow:0 0 0 3px rgba(142,162,255,.08);}
+.specialPasswordError{min-height:16px;margin:8px 0;color:var(--danger);font-size:10px;}
+.specialPasswordBtn{width:100%;margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"><span>♡</span></div>
+      <div><h1>Catch Her</h1><div class="sub">find the point where two paths meet</div></div>
+    </div>
+    <div class="progress"><span class="progressText" id="progressText">Level 1 / 6</span><div class="dots" id="dots"></div></div>
+  </header>
+
+  <main class="layout">
+    <section class="card stage">
+      <canvas id="graph"></canvas>
+      <div class="hud">
+        <div class="pill">X <b>−8 to 8</b></div>
+        <div class="pill">Y <b>−8 to 8</b></div>
+        <div class="pill">Time <b id="timer">18.0s</b></div>
+        <div class="pill">distance <b id="distance">—</b></div>
+        <div class="pill">intersections <b id="hits">0</b></div>
+      </div>
+      <div class="message" id="message"></div>
+    </section>
+
+    <aside class="card panel">
+      <div>
+        <h2 class="levelTitle" id="levelTitle">First Notice</h2>
+        <p class="levelDesc" id="levelDesc">You see a point moving across the plane. Find a path that meets it.</p>
+      <div class="positionInfo" id="positionInfo"></div>
+      </div>
+
+      <div class="statRow">
+        <div class="stat"><span>you</span><strong>● blue</strong><small>speed: 2.00 u/s</small></div>
+        <div class="stat"><span>her</span><strong>● pink</strong><small>speed: 1.50 u/s</small></div>
+      </div>
+
+      <div class="fixedEq">
+        <div class="fixedEqHead"><span id="crushPathLabel">HER PATH</span><span>🔒 FIXED</span></div>
+        <div class="eq herEq" id="herEquation">y = 0.58x + 2.10</div>
+        <div class="fixedHint">This equation cannot be changed. Solve it if you want.</div>
+      </div>
+
+      <input class="eq equationInput" id="equation" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" value="y = 0.00x + 0.00" aria-label="Your equation">
+
+      <div class="control">
+        <div class="controlHead"><span>Path direction</span><span id="slopeVal">1.00</span></div>
+        <input id="slope" type="range" min="-3" max="3" step=".01" value="0">
+      </div>
+
+      <div class="control">
+        <div class="controlHead"><span>Path position</span><span id="interceptVal">0.00</span></div>
+        <input id="intercept" type="range" min="-7" max="7" step=".01" value="0">
+      </div>
+
+      <div class="control">
+        <div class="controlHead"><span>Movement along your path</span><span id="directionVal">→ forward</span></div>
+        <div class="actions">
+          <button class="btn" id="backward" type="button">← Backward</button>
+          <button class="btn" id="forward" type="button">Forward →</button>
+        </div>
+        <div class="fixedHint movementHint">Choose a direction before Start. It locks while the game is running.</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="reset">Reset</button>
+        <button class="btn primary" id="start">Start</button>
+      </div>
+
+      <div class="legend">
+        <span><i style="background:#8ea2ff"></i>your path</span>
+        <span><i style="background:#ff7eaa"></i>her path</span>
+      </div>
+
+      <div class="help">
+        <span id="crushSpeedText">Her</span> moves independently at <b>1.50 units/s</b>. You move at <b>2.00 units/s</b> along your chosen line. Choose the equation and direction, then catch the moving point at the same time.
+      </div>
+    </aside>
+  </main>
+</div>
+
+
+<!-- Credit Screen -->
+<div class="creditOverlay" id="creditOverlay">
+  <div class="creditCard">
+    <div class="creditEyebrow">GAME CREDIT</div>
+    <h2>Concept and vibe coding of game: Rushabh Deshmane.</h2>
+    <p>Built around the idea of two paths finding their intersection.</p>
+    <div class="creditTouch">(Touch anywhere to continue)</div>
+  </div>
+</div>
+
+<!-- Identity Screen -->
+<div class="identityOverlay show" id="identityOverlay">
+  <div class="identityCard">
+    <div class="identityLogo">♡</div>
+    <div class="identityEyebrow">BEFORE WE BEGIN</div>
+    <h2>Who are you?</h2>
+    <p>
+      Every intersection starts with two points.<br>
+      Let's start with yours.
+    </p>
+
+    <div class="identityForm">
+      <div class="inputWrap">
+        <label for="nameInput">YOUR NAME</label>
+        <input id="nameInput" type="text" autocomplete="off"
+               placeholder="Enter your name" maxlength="30">
+      </div>
+
+      <div class="inputWrap">
+        <label>YOUR GENDER</label>
+        <div class="genderChoices">
+          <button type="button" class="choiceBtn" data-gender="boy">Boy</button>
+          <button type="button" class="choiceBtn" data-gender="girl">Girl</button>
+        </div>
+      </div>
+
+      <div class="inputWrap">
+        <label for="crushInput">YOUR CRUSH'S NAME</label>
+        <input id="crushInput" type="text" autocomplete="off"
+               placeholder="Enter their name" maxlength="30">
+        <button type="button" class="noCrushBtn" id="noCrush">I don't have a crush</button>
+      </div>
+
+      <div class="inputWrap surnameWrap" id="surnameWrap">
+        <label for="surnameInput">SURNAME</label>
+        <input id="surnameInput" type="text" autocomplete="off"
+               placeholder="Enter your surname" maxlength="30">
+      </div>
+
+      <button class="btn primary identityBtn" id="enterGame">
+        Enter the graph →
+      </button>
+    </div>
+
+    <div class="identityHint">
+      No pressure. Just find the point.
+    </div>
+  </div>
+</div>
+
+
+<!-- Special List Password Screen -->
+<div class="specialPasswordOverlay" id="specialPasswordOverlay">
+  <div class="specialPasswordCard">
+    <div class="identityEyebrow">SPECIAL LIST</div>
+    <h2>Password required</h2>
+    <p>Your name is in the special list, so you will need a password to start the game.</p>
+    <input id="specialPasswordInput" type="password" autocomplete="off" placeholder="Enter password">
+    <div class="specialPasswordError" id="specialPasswordError"></div>
+    <button class="btn primary specialPasswordBtn" id="specialPasswordBtn">Unlock game →</button>
+  </div>
+</div>
+
+<!-- Level 5 Personal Message Screen -->
+<div class="level5Overlay" id="level5Overlay">
+  <div class="level5Card">
+    <div class="level5Eyebrow">LEVEL 5 • PERSONAL MESSAGE</div>
+    <div class="level5Icon">♡</div>
+    <div class="level5Message" id="level5Message"></div>
+    <div class="level5Equation" id="level5Equation"></div>
+    <button class="btn primary level5Btn" id="level5Next">Continue</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="eyebrow" id="modalEyebrow">Intersection found</div>
+    <h2 id="modalTitle">You caught her.</h2>
+    <p id="modalText"></p>
+    <div class="finalEquation" id="modalEquation"></div>
+    <button class="btn primary" id="next">Continue</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // Catch Her v9 — physical path movement / timed interception update.
+  const canvas=document.getElementById('graph'),ctx=canvas.getContext('2d');
+  const $=id=>document.getElementById(id);
+  const slope=$('slope'), intercept=$('intercept');
+  const levelTitle=$('levelTitle'),levelDesc=$('levelDesc');
+  const equation=$('equation'),distanceEl=$('distance'),hitsEl=$('hits');
+  const message=$('message'),overlay=$('overlay');
+  const modalTitle=$('modalTitle'),modalText=$('modalText'),modalEquation=$('modalEquation'),modalEyebrow=$('modalEyebrow');
+  const level5Overlay=$('level5Overlay'),level5Message=$('level5Message'),level5Equation=$('level5Equation'),level5Next=$('level5Next');
+  const specialPasswordOverlay=$('specialPasswordOverlay'),specialPasswordInput=$('specialPasswordInput'),specialPasswordError=$('specialPasswordError'),specialPasswordBtn=$('specialPasswordBtn');
+
+  const levels=[
+    {title:"First Notice",desc:"She moves in a simple line. Learn how changing your path changes where you can meet.",kind:"line",speed:.72,text:"You noticed her.",eq:"y = 0.58x + 2.10",initialHer:[-5.50,-1.09],yRange:"−1.09 to 5.29"},
+    {title:"First Conversation",desc:"Her path bends now. You need to think about where she will be, not where she is.",kind:"parabola",speed:.56,text:"You found a way to talk.",eq:"y = 0.18x² − 3.30",initialHer:[0,-3.30],yRange:"−3.30 to 0.85"},
+    {title:"Almost",desc:"She keeps moving around you. A good path is about timing.",kind:"circle",speed:.68,text:"So close.",eq:"x = 3.25 cos(t),  y = 2.15 sin(t)",initialHer:[3.25,0],yRange:"−2.15 to 2.15"},
+    {title:"Different Paths",desc:"Your paths can cross without meeting at the same time. This time, timing matters.",kind:"wave",speed:.82,text:"Same path. Wrong moment.",eq:"y = 2.10 sin(0.95x + 0.20t)",initialHer:[-5.50,1.83],yRange:"−2.10 to 2.10"},
+    {title:"The Right Point",desc:"Predict the future point and send your path there.",kind:"figure8",speed:.74,text:"You found the right point.",eq:"x = 4.40 sin(0.62t),  y = 2.55 sin(1.24t)",initialHer:[0,0],yRange:"−2.55 to 2.55"},
+    {title:"The Intersection",desc:"One last time. Everything you learned comes together here.",kind:"final",speed:.62,text:"Two paths. One point.",eq:"x = 4.70 sin(0.52t),  y = 3.10 sin(1.04t) cos(0.18t)",initialHer:[0,0],yRange:"approximately −3.10 to 3.10"}
+  ];
+
+  let level=0, running=false, completed=false, timedOut=false, time=0, hits=0, last=performance.now();
+  let player={x:-5,y:0}, her={x:3,y:2};
+  let movementDirection=1; // +1 = forward/right along increasing x, -1 = backward.
+  let lockedDirection=1;
+  let W=0,H=0,scale=55,origin={x:0,y:0};
+  let userName="", userSurname="", userGender="", crushName="", hasCrush=true;
+
+  // If one of these users selects "I don't have a crush",
+  // the game assumes the corresponding name for the experience.
+  const ASSUMED_CRUSHES = {
+    "krushna":"Shravani",
+    "aryan pansare":"Shravani",
+    "aryan suryawanshi":"Vedika",
+    "prajwal":"Shravani",
+    "manish":"Shreya",
+    "raj":"Nandini",
+    "vidya":"Him",
+    "atharv":"Samruddhi",
+    "harshwardhan":"Mia"
+  };
+
+  function getPersonalMessage(){
+    const n=userName.trim().toLowerCase();
+    const s=userSurname.trim().toLowerCase();
+
+    if(n==="krushna") return "Height matters in relationship.";
+    if(n==="raj") return "Hiding relationship from friends was never a solution.";
+    if(n==="atharv") return "poricha nad lay vait.";
+    if(n==="manish") return "💕 dya ektya ektyat porgi patavli.";
+    if(n==="aryan" && s==="suryawanshi") return "You should think about colouring hairs.";
+    if(n==="aryan" && s==="pansare") return "I know about car no. 8767";
+    if(n==="sujay") return "Bio was not choice, maths was.";
+    if(n==="prajwal") return "I like..... hate you.";
+    if(n==="harshwardhan") return "I think you should improve.";
+    if(n==="vidya") return "Is my secret still a secret, or did you tell someone? .....I think she knows that I am interested in her! By the way, you look cute in that hairstyle😁 Sister!";
+    if(n==="apeksha") return "It’s not about maths. It’s about the dopamine one eye contact gives you.";
+    return levels[4].text;
+  }
+
+
+  function setupCredit(){
+    const creditOverlay = $("creditOverlay");
+    let continued = false;
+
+    const continueCredit = (e) => {
+      if(continued) return;
+      continued = true;
+      if(e) e.preventDefault();
+
+      creditOverlay.classList.add("hide");
+      setTimeout(() => {
+        creditOverlay.style.display = "none";
+        const nameInput = $("nameInput");
+        if(nameInput){
+          document.body.classList.add("typing-mode");
+          nameInput.focus();
+        }
+      }, 500);
+    };
+
+    // pointerup works reliably on Android, while click remains a fallback.
+    creditOverlay.addEventListener("pointerup", continueCredit);
+    creditOverlay.addEventListener("click", continueCredit);
+  }
+
+  let renderActive=false;
+
+  const SPECIAL_PASSWORD='expectation';
+  const SPECIAL_USERS=new Set(['vidya','apeksha']);
+
+  function isSpecialUser(name){
+    return SPECIAL_USERS.has(String(name||'').trim().toLowerCase());
+  }
+
+  function openSpecialPassword(){
+    specialPasswordInput.value='';
+    specialPasswordError.textContent='';
+    specialPasswordOverlay.classList.add('show');
+    setTimeout(()=>specialPasswordInput.focus(),120);
+  }
+
+  function unlockSpecialUser(){
+    if(specialPasswordInput.value.trim().toLowerCase()!==SPECIAL_PASSWORD){
+      specialPasswordError.textContent='Incorrect password. Please try again.';
+      specialPasswordInput.focus();
+      specialPasswordInput.select();
+      return;
+    }
+    specialPasswordOverlay.classList.remove('show');
+    specialPasswordError.textContent='';
+    document.body.classList.remove('typing-mode');
+    renderActive=true;
+    render();
+  }
+
+  function setupIdentity(){
+    const identityOverlay = $("identityOverlay");
+    const nameInput = $("nameInput");
+
+    // Pause graph animation while entering identity details.
+    renderActive=false;
+    const surnameInput = $("surnameInput");
+    const surnameWrap = $("surnameWrap");
+    const crushInput = $("crushInput");
+    const noCrush = $("noCrush");
+    const enterGame = $("enterGame");
+    const genderButtons = document.querySelectorAll(".choiceBtn");
+
+    nameInput.focus();
+
+    genderButtons.forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        genderButtons.forEach(b=>b.classList.remove("selected"));
+        btn.classList.add("selected");
+        userGender=btn.dataset.gender;
+
+        // The graph uses the user's gender to decide which side gets "you".
+        if(userGender==="boy"){
+          document.documentElement.style.setProperty("--accent","#8ea2ff");
+        }else{
+          document.documentElement.style.setProperty("--accent","#ff7eaa");
+        }
+      });
+    });
+
+    nameInput.addEventListener("input",()=>{
+      const name = nameInput.value.trim().toLowerCase();
+
+      if(name === "aryan"){
+        surnameWrap.classList.add("show");
+      }else{
+        surnameWrap.classList.remove("show");
+        surnameInput.value = "";
+      }
+    });
+
+    noCrush.addEventListener("click",()=>{
+      hasCrush=!hasCrush;
+      noCrush.classList.toggle("selected",!hasCrush);
+      crushInput.disabled=!hasCrush;
+
+      if(!hasCrush){
+        const typedName = nameInput.value.trim().toLowerCase();
+        const assumed = ASSUMED_CRUSHES[typedName];
+        crushInput.value = assumed || "";
+        crushName = assumed || "";
+        crushInput.placeholder = assumed
+          ? "Let's assume: " + assumed
+          : "No crush selected";
+        applyIdentity();
+      }else{
+        crushInput.value = "";
+        crushInput.placeholder = "Enter their name";
+      }
+    });
+
+    function enter(){
+      userName = nameInput.value.trim();
+      userSurname = surnameInput.value.trim();
+
+      const normalizedName = userName.toLowerCase();
+      if(!hasCrush){
+        crushName = ASSUMED_CRUSHES[normalizedName] || "";
+      }else{
+        crushName = crushInput.value.trim();
+      }
+
+      if(!userName){
+        nameInput.focus();
+        nameInput.style.borderColor = "var(--pink)";
+        setTimeout(()=>{ nameInput.style.borderColor = ""; },700);
+        return;
+      }
+
+      if(!userGender){
+        genderButtons.forEach(b=>b.style.borderColor="var(--pink)");
+        setTimeout(()=>genderButtons.forEach(b=>b.style.borderColor=""),700);
+        return;
+      }
+
+      if(hasCrush && !crushName){
+        crushInput.focus();
+        crushInput.style.borderColor = "var(--pink)";
+        setTimeout(()=>{ crushInput.style.borderColor = ""; },700);
+        return;
+      }
+
+      if(!hasCrush && ASSUMED_CRUSHES[normalizedName]){
+        crushName = ASSUMED_CRUSHES[normalizedName];
+        crushInput.value = crushName;
+      }
+
+      // v8: Commit the final identity once, immediately before opening the graph.
+      if(hasCrush){
+        crushName = crushInput.value.trim();
+      }else{
+        crushName = ASSUMED_CRUSHES[normalizedName] || "";
+      }
+
+      // Apply the same committed name to every UI surface before rendering.
+      applyIdentity();
+      identityOverlay.classList.remove("show");
+      identityOverlay.style.display = "none";
+
+      // Vidya and Apeksha are on the special list and must enter a password.
+      if(isSpecialUser(userName)){
+        openSpecialPassword();
+        return;
+      }
+
+      document.body.classList.remove("typing-mode");
+      renderActive=true;
+      render();
+    }
+
+    enterGame.addEventListener("click",enter);
+
+    // Keep the crush name synchronized immediately while it is being typed.
+    crushInput.addEventListener("input",()=>{
+      if(hasCrush){
+        crushName = crushInput.value.trim();
+        if(crushName){
+          applyIdentity();
+          if(renderActive) render();
+        }
+      }
+    });
+
+    [nameInput, crushInput, surnameInput].forEach(input=>{
+      input.addEventListener("keydown",(e)=>{
+        if(e.key==="Enter") enter();
+      });
+    });
+  }
+
+  // v8: One source of truth for the crush name shown everywhere.
+  // This prevents the graph label, legend, and side panel from getting
+  // different values during identity setup.
+  function getCrushDisplayName(){
+    const name=String(crushName||"").trim();
+    return name || (userGender==="boy" ? "her" : "him");
+  }
+
+  function applyIdentity(){
+    const youColor = userGender==="girl" ? "#ff7eaa" : "#8ea2ff";
+    const crushColor = userGender==="girl" ? "#8ea2ff" : "#ff7eaa";
+    const crushDisplayName = getCrushDisplayName();
+
+    document.querySelector(".statRow .stat:first-child strong").textContent="● you";
+    document.querySelector(".statRow .stat:first-child small").textContent="speed: 2.00 u/s";
+
+    document.querySelector(".statRow .stat:nth-child(2) span").textContent=crushDisplayName;
+    document.querySelector(".statRow .stat:nth-child(2) strong").textContent="● "+crushDisplayName;
+
+    document.querySelector(".legend span:first-child").innerHTML=
+      `<i style="background:${youColor}"></i>you`;
+    document.querySelector(".legend span:nth-child(2)").replaceChildren(
+      Object.assign(document.createElement("i"), {
+        style: `background:${crushColor}`
+      }),
+      document.createTextNode(crushDisplayName)
+    );
+
+    document.querySelector(".statRow .stat:first-child").style.setProperty("--you-color",youColor);
+    document.querySelector(".statRow .stat:nth-child(2)").style.setProperty("--crush-color",crushColor);
+
+    window.identityYouColor=youColor;
+    window.identityCrushColor=crushColor;
+
+    syncUI();
+  }
+
+  function resize(){
+    const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;
+    W=r.width;H=r.height;canvas.width=W*d;canvas.height=H*d;ctx.setTransform(d,0,0,d,0,0);
+    scale=Math.min(W,H)/14;origin={x:W/2,y:H/2};
+  }
+  addEventListener('resize',resize); resize();
+
+  function sx(x){return origin.x+x*scale}
+  function sy(y){return origin.y-y*scale}
+  function worldX(px){return (px-origin.x)/scale}
+  function worldY(py){return (origin.y-py)/scale}
+
+  function pathY(x){return +slope.value*x+ +intercept.value}
+
+  // Both speeds stay constant across every level.
+  const HER_SPEED = 1.50;
+  const PLAYER_SPEED = 2.00;
+  const PLAYER_START_X = -5.00;
+  // Keep the player's center inside the visible graph.
+  const PLAYER_MIN_X = -7.80;
+  const PLAYER_MAX_X =  7.80;
+  const PLAYER_MIN_Y = -7.80;
+  const PLAYER_MAX_Y =  7.80;
+  const MAX_ATTEMPT_TIME = 18.0;
+
+  function herPosition(t){
+    const k=levels[level].kind;
+    // t is elapsed game-time; each path is parameterized so its
+    // displayed motion uses a fixed speed approximately in graph units/sec.
+    if(k==="line"){
+      const x=-5.5 + ((t*HER_SPEED + 5.5) % 11);
+      return {x,y:.58*x+2.1};
+    }
+    if(k==="parabola"){
+      const a=4.8, x=a*Math.sin(t*.30);
+      const y=.18*x*x-3.3;
+      return {x,y};
+    }
+    if(k==="circle"){
+      const rX=3.25,rY=2.15,omega=HER_SPEED/Math.max(rX,rY);
+      return {x:rX*Math.cos(t*omega),y:rY*Math.sin(t*omega)};
+    }
+    if(k==="wave"){
+      const x=-5.5 + ((t*HER_SPEED + 5.5) % 11);
+      return {x,y:2.1*Math.sin(x*.95+t*.08)};
+    }
+    if(k==="figure8"){
+      const a=4.4,omega=HER_SPEED/a;
+      return {x:a*Math.sin(t*omega),y:2.55*Math.sin(2*t*omega)};
+    }
+    const a=4.7,omega=HER_SPEED/a;
+    return {x:a*Math.sin(t*omega),y:3.1*Math.sin(2*t*omega)*Math.cos(.18*t*omega)};
+  }
+
+  function drawGrid(){
+    ctx.clearRect(0,0,W,H);
+    const grad=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,Math.max(W,H)*.7);
+    grad.addColorStop(0,"#10152b");grad.addColorStop(1,"#070914");ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+    ctx.lineWidth=1;
+    for(let x=-8;x<=8;x++){ctx.strokeStyle=x===0?"rgba(255,255,255,.24)":"rgba(255,255,255,.045)";ctx.beginPath();ctx.moveTo(sx(x),0);ctx.lineTo(sx(x),H);ctx.stroke()}
+    for(let y=-8;y<=8;y++){ctx.strokeStyle=y===0?"rgba(255,255,255,.24)":"rgba(255,255,255,.045)";ctx.beginPath();ctx.moveTo(0,sy(y));ctx.lineTo(W,sy(y));ctx.stroke()}
+    ctx.fillStyle="rgba(255,255,255,.27)";ctx.font="10px ui-monospace,monospace";
+    for(let x=-7;x<=7;x++)if(x)ctx.fillText(x,sx(x)+4,origin.y-5);
+    for(let y=-7;y<=7;y++)if(y)ctx.fillText(y,origin.x+6,sy(y)-4);
+  }
+
+  function drawGlowPoint(x,y,color,label){
+    const px=sx(x),py=sy(y),g=ctx.createRadialGradient(px,py,0,px,py,25);
+    g.addColorStop(0,color+"cc");g.addColorStop(1,color+"00");ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,25,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=color;ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=color+"66";ctx.lineWidth=1;ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.82)";
+    ctx.font="600 10px system-ui";
+    ctx.textBaseline="middle";
+    ctx.fillText(String(label||""),px+12,py-10);
+    ctx.textBaseline="alphabetic";
+  }
+
+  function drawPlayerPath(){
+    ctx.strokeStyle="rgba(142,162,255,.5)";ctx.lineWidth=2;
+    ctx.beginPath();let started=false;
+    for(let px=0;px<=W;px+=4){
+      const x=worldX(px),y=pathY(x),py=sy(y);
+      if(py<-80||py>H+80){started=false;continue}
+      if(!started){ctx.moveTo(px,py);started=true}else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+
+  function drawHerPath(){
+    ctx.strokeStyle="rgba(255,126,170,.27)";ctx.lineWidth=1.6;ctx.setLineDash([5,7]);
+    ctx.beginPath();let started=false;
+    for(let tt=time-8;tt<=time+8;tt+=.025){
+      const p=herPosition(tt),px=sx(p.x),py=sy(p.y);
+      if(px<-100||px>W+100||py<-100||py>H+100){started=false;continue}
+      if(!started){ctx.moveTo(px,py);started=true}else ctx.lineTo(px,py);
+    }
+    ctx.stroke();ctx.setLineDash([]);
+  }
+
+  function update(dt){
+    if(!running)return;
+
+    // One shared physical clock: her moves independently of your equation.
+    // There is no homing target and no interpolation toward her position.
+    time += dt;
+    if(timerEl) timerEl.textContent=Math.max(0,MAX_ATTEMPT_TIME-time).toFixed(1)+"s";
+    her = herPosition(time);
+
+    // You are constrained to the selected line and travel at constant speed.
+    // For y = ax + c, a unit step along the line has x component 1/sqrt(1+a²).
+    const a=+slope.value;
+    const step=(PLAYER_SPEED * dt)/Math.sqrt(1+a*a);
+
+    // Bounce at the graph limits. The player always remains on the
+    // selected line and reverses direction instead of leaving the graph.
+    let nextX = player.x + lockedDirection * step;
+    let nextY = pathY(nextX);
+
+    if(
+      nextX < PLAYER_MIN_X || nextX > PLAYER_MAX_X ||
+      nextY < PLAYER_MIN_Y || nextY > PLAYER_MAX_Y
+    ){
+      lockedDirection *= -1;
+      nextX = player.x + lockedDirection * step;
+      nextY = pathY(nextX);
+
+      // Handle very large steps safely.
+      nextX = Math.max(PLAYER_MIN_X, Math.min(PLAYER_MAX_X, nextX));
+      nextY = pathY(nextX);
+
+      if(nextY < PLAYER_MIN_Y || nextY > PLAYER_MAX_Y){
+        lockedDirection *= -1;
+        nextX = player.x + lockedDirection * step;
+        nextX = Math.max(PLAYER_MIN_X, Math.min(PLAYER_MAX_X, nextX));
+        nextY = pathY(nextX);
+      }
+    }
+
+    player.x = nextX;
+    player.y = nextY;
+
+    const d=Math.hypot(player.x-her.x,player.y-her.y);
+    distanceEl.textContent=d.toFixed(2);
+
+    if(d<.18 && !completed){
+      completed=true;
+      running=false;
+      hits++;
+      hitsEl.textContent=hits;
+      showComplete();
+      return;
+    }
+
+    // Do not allow a level to be solved simply by waiting for repeated
+    // periodic motion to bring the two paths close again.
+    if(time >= MAX_ATTEMPT_TIME && !completed){
+      running=false;
+      timedOut=true;
+      time=MAX_ATTEMPT_TIME;
+      if(timerEl) timerEl.textContent="0.0s";
+      setGameControlsLocked(false);
+      $('forward').disabled=false;
+      $('backward').disabled=false;
+      $('start').textContent="Try again";
+      message.textContent="No meeting in this attempt — change your equation or direction.";
+      message.classList.add("show");
+      setTimeout(()=>message.classList.remove("show"),2600);
+    }
+  }
+
+  function render(){
+    if(!renderActive)return;
+    drawGrid();drawHerPath();drawPlayerPath();
+    drawGlowPoint(player.x,player.y,window.identityYouColor||"#8ea2ff","you");
+    // v8: Always draw the exact crush name currently stored in crushName.
+    drawGlowPoint(
+      her.x,
+      her.y,
+      window.identityCrushColor||"#ff7eaa",
+      getCrushDisplayName()
+    );
+    requestAnimationFrame(render);
+  }
+
+  function parseEquation(raw){
+    let t=raw.trim().toLowerCase().replace(/[−–—]/g,"-").replace(/\s+/g,"");
+    if(t.startsWith("y=")) t=t.slice(2);
+    const m=t.match(/^([+-]?(?:\d*\.?\d+))?x(?:([+-])(?:\d*\.?\d+))?$/);
+    if(!m) return null;
+    const a=(m[1]===undefined||m[1]===""||m[1]==="+")?1:(m[1]==="-"?-1:parseFloat(m[1]));
+    const c=m[2]?parseFloat((m[2]==="-"?"-":"")+t.split("x")[1].slice(1)):0;
+    if(!Number.isFinite(a)||!Number.isFinite(c)||a < -3 || a > 3 || c < -7 || c > 7) return null;
+    return {a,c};
+  }
+
+  function syncUI(){
+    const s=+slope.value,c=+intercept.value;
+    $('slopeVal').textContent=s.toFixed(2);$('interceptVal').textContent=c.toFixed(2);
+    if(document.activeElement!==equation){ equation.value=`y = ${s.toFixed(2)}x ${c>=0?"+":"−"} ${Math.abs(c).toFixed(2)}`; }
+    $('herEquation').textContent=levels[level].eq;
+    const info=levels[level];
+    const crushLabelForInfo=getCrushDisplayName();
+    const startY=pathY(PLAYER_START_X);
+    $('positionInfo').innerHTML=`<b>Initial positions:</b> you (${PLAYER_START_X.toFixed(2)}, ${startY.toFixed(2)}) · ${crushLabelForInfo} (${info.initialHer[0].toFixed(2)}, ${info.initialHer[1].toFixed(2)})<br><b>Your movement:</b> along your chosen line at 2.00 u/s · <b>${crushLabelForInfo}:</b> 1.50 u/s`;
+    $('crushPathLabel').textContent=crushLabelForInfo.toUpperCase() + " PATH";
+    $('crushSpeedText').textContent=crushLabelForInfo.charAt(0).toUpperCase()+crushLabelForInfo.slice(1);
+    levelTitle.textContent=levels[level].title;levelDesc.textContent=levels[level].desc;
+    $('progressText').textContent=`Level ${level+1} / ${levels.length}`;
+    document.querySelectorAll('.dot').forEach((d,i)=>d.className="dot "+(i<level?"done":i===level?"active":""));
+  }
+
+  function reset(){
+    running=false;
+    completed=false;
+    timedOut=false;
+    time=0;
+    if(timerEl) timerEl.textContent=MAX_ATTEMPT_TIME.toFixed(1)+"s";
+    movementDirection=1;
+    lockedDirection=1;
+    const startX=Math.max(PLAYER_MIN_X,Math.min(PLAYER_MAX_X,PLAYER_START_X));
+    player={x:startX,y:pathY(startX)};
+    her=herPosition(0);
+    distanceEl.textContent="—";
+    message.classList.remove("show");
+    $('start').textContent="Start";
+    setGameControlsLocked(false);
+    $('forward').disabled=false;
+    $('backward').disabled=false;
+    syncDirectionUI();
+    syncUI();
+  }
+
+  function setGameControlsLocked(locked){
+    equation.disabled=locked;
+    slope.disabled=locked;
+    intercept.disabled=locked;
+  }
+
+  function start(){
+    if(completed)return;
+
+    if(timedOut){
+      reset();
+      return;
+    }
+
+    if(!running){
+      // Freeze the chosen direction for this attempt.
+      lockedDirection=movementDirection;
+      running=true;
+      $('forward').disabled=true;
+      $('backward').disabled=true;
+      setGameControlsLocked(true);
+      $('start').textContent="Pause";
+    }else{
+      running=false;
+      $('start').textContent="Start";
+      // Direction remains locked after pausing so pausing cannot change physics.
+    }
+  }
+
+  function syncDirectionUI(){
+    $('directionVal').textContent=movementDirection===1?"→ forward":"← backward";
+    $('forward').classList.toggle('primary',movementDirection===1);
+    $('backward').classList.toggle('primary',movementDirection===-1);
+  }
+
+  function showComplete(){
+    const s=+slope.value,c=+intercept.value;
+    const equationText=`your path: y = ${s.toFixed(2)}x ${c>=0?"+":"−"} ${Math.abs(c).toFixed(2)}   •   meeting point: (${her.x.toFixed(2)}, ${her.y.toFixed(2)})`;
+
+    // Level 5 gets its own large-message template.
+    if(level===5){
+      level5Message.textContent=getPersonalMessage();
+      level5Equation.textContent=equationText;
+      level5Next.textContent="Continue";
+      level5Overlay.classList.add("show");
+      return;
+    }
+
+    modalEyebrow.textContent=level===levels.length-1?"Final intersection":"Intersection found";
+    modalTitle.textContent=level===levels.length-1?"Maybe this was the point.":"You caught " + (hasCrush&&crushName?crushName:(userGender==="boy"?"her":"him")) + ".";
+    modalText.textContent=levels[level].text;
+    modalEquation.textContent=equationText;
+    $('next').textContent=level===levels.length-1?"See the ending":"Next level";
+    overlay.classList.add("show");
+  }
+
+  function nextLevel(){
+    overlay.classList.remove("show");
+    if(level===levels.length-1){showFinal();return}
+    level++;reset();showToast(levels[level-1].text);
+  }
+
+  function showFinal(){
+    modalEyebrow.textContent="The graph remembers";
+    modalTitle.textContent="Two paths. One point.";
+    modalText.textContent="Every level was just another way of asking the same question: where do two different paths finally meet?";
+    modalEquation.textContent="No equation can tell you what happens next.";
+    $('next').textContent="Play again";
+    $('next').onclick=()=>{level=0;hits=0;hitsEl.textContent="0";$('next').onclick=nextLevel;overlay.classList.remove("show");reset();};
+    overlay.classList.add("show");
+  }
+
+  function showToast(t){message.textContent=t;message.classList.add("show");setTimeout(()=>message.classList.remove("show"),2200)}
+
+  const timerEl=$('timer');
+
+  const equationPanel=document.querySelector(".panel");
+
+  function hideEquationInfo(){
+    if(equationPanel) equationPanel.classList.add("info-hidden");
+  }
+  function showEquationInfo(){
+    if(equationPanel) equationPanel.classList.remove("info-hidden");
+  }
+
+  ["pointerdown","touchstart","mousedown"].forEach(ev=>{
+    slope.addEventListener(ev,hideEquationInfo,{passive:true});
+    intercept.addEventListener(ev,hideEquationInfo,{passive:true});
+  });
+  ["pointerup","pointercancel","touchend","touchcancel","mouseup"].forEach(ev=>{
+    slope.addEventListener(ev,showEquationInfo,{passive:true});
+    intercept.addEventListener(ev,showEquationInfo,{passive:true});
+  });
+
+  slope.addEventListener("input",()=>{ hideEquationInfo(); if(!running) syncUI(); });
+  intercept.addEventListener("input",()=>{ hideEquationInfo(); if(!running) syncUI(); });
+  $('forward').addEventListener("click",()=>{ if(!running){movementDirection=1;syncDirectionUI();} });
+  $('backward').addEventListener("click",()=>{ if(!running){movementDirection=-1;syncDirectionUI();} });
+  equation.addEventListener("focus",()=>{ equation.select(); });
+  equation.addEventListener("input",()=>{
+    const parsed=parseEquation(equation.value);
+    if(parsed){
+      slope.value=parsed.a; intercept.value=parsed.c;
+      equation.style.borderColor="";
+      syncUI();
+      equation.value=equation.value; // preserve exactly what the player typed
+    }else{
+      equation.style.borderColor="var(--pink)";
+    }
+  });
+  equation.addEventListener("blur",()=>{
+    const parsed=parseEquation(equation.value);
+    if(parsed){ slope.value=parsed.a; intercept.value=parsed.c; syncUI(); }
+    else { syncUI(); }
+  });
+  specialPasswordBtn.addEventListener("click",unlockSpecialUser);
+  specialPasswordInput.addEventListener("keydown",e=>{
+    if(e.key==="Enter") unlockSpecialUser();
+  });
+
+  $('reset').addEventListener("click",reset);$('start').addEventListener("click",start);$('next').addEventListener("click",nextLevel);
+  level5Next.addEventListener("click",()=>{
+    level5Overlay.classList.remove("show");
+    if(level===5){
+      level++;
+      reset();
+      showToast("One last time.");
+    }
+  });
+  for(let i=0;i<levels.length;i++){const d=document.createElement("i");d.className="dot";$('dots').appendChild(d)}
+  setupCredit();
+  setupIdentity();
+  syncUI();reset();
+  requestAnimationFrame(function loop(now){
+    update((now-last)/1000);
+    last=now;
+    requestAnimationFrame(loop);
+  });
+  // Rendering starts after identity is submitted.
+  if(renderActive) render();
+})();
+</script>
+</body>
+</html>
